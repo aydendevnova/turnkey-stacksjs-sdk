@@ -32,6 +32,8 @@ export default {
       declarationDir: "./dist",
       rootDir: "./src",
       exclude: ["**/__tests__/**", "**/__fixtures__/**"],
+      module: "ESNext",
+      moduleResolution: "bundler",
     }),
   ],
 };
