@@ -1,5 +1,8 @@
 # @turnkey/stacks
 
+[![npm version](https://img.shields.io/npm/v/@turnkey/stacks)](https://www.npmjs.com/package/@turnkey/stacks)
+[![Apache-2.0](https://img.shields.io/npm/l/@turnkey/stacks)](./LICENSE)
+
 Turnkey signer for Stacks blockchain transactions.
 
 This package provides a class-based signer following the patterns established by `@turnkey/solana`, `@turnkey/ethers`, and `@turnkey/cosmjs`.

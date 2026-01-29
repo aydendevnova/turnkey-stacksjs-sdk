@@ -4,6 +4,14 @@ node_modules/
 # Build output
 dist/
 
+# Cache
+.cache/
+*.tsbuildinfo
+.rollup.cache/
+
+# Turbo
+.turbo/
+
 # Environment
 .env
 .env.local
@@ -26,6 +34,5 @@ npm-debug.log*
 # Coverage
 coverage/
 
-# Cache
-.cache/
-*.tsbuildinfo
+# Generated docs
+docs/

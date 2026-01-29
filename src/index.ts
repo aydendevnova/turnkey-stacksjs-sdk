@@ -48,7 +48,7 @@ import type {
   SignedTransactionResult,
   BroadcastResult,
   StacksNetworkType,
-} from "./types.js"
+} from "./types"
 
 // Re-export types
 export type {
