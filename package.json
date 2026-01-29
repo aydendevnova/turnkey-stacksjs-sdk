@@ -1,0 +1,66 @@
+{
+  "name": "@turnkey/stacks",
+  "version": "0.1.0-beta.1",
+  "description": "Turnkey signer for Stacks blockchain transactions",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "dev": "tsup src/index.ts --format esm --dts --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "turnkey",
+    "stacks",
+    "blockchain",
+    "signing",
+    "wallet",
+    "stx",
+    "web3"
+  ],
+  "author": "Turnkey",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tkhq/sdk"
+  },
+  "bugs": {
+    "url": "https://github.com/tkhq/sdk/issues"
+  },
+  "homepage": "https://github.com/tkhq/sdk/tree/main/packages/stacks",
+  "engines": {
+    "node": ">=18"
+  },
+  "peerDependencies": {
+    "@stacks/transactions": "^7.0.0"
+  },
+  "dependencies": {
+    "@turnkey/http": "^2.0.0"
+  },
+  "devDependencies": {
+    "@stacks/transactions": "^7.3.1",
+    "@turnkey/sdk-server": "^4.12.2",
+    "@types/node": "^20.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
+  }
+}
