@@ -1,3 +1,4 @@
+// Note: this is a computational test: not a live Turnkey API demo test.
 import { TurnkeySigner, getAddressFromPublicKey } from "../index";
 
 describe("@turnkey/stacks", () => {

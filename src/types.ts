@@ -21,6 +21,7 @@ export type StacksNetworkType = "testnet" | "mainnet"
  */
 export interface TurnkeySignerClient {
   signRawPayload(params: {
+    organizationId?: string
     signWith: string
     payload: string
     encoding: "PAYLOAD_ENCODING_HEXADECIMAL"
@@ -36,21 +37,25 @@ export interface TurnkeySignerConfig {
    * Turnkey client instance that implements signRawPayload
    *
    * For @turnkey/sdk-server: pass `turnkey.apiClient()`
+   * For @turnkey/react-wallet-kit (browser): pass `httpClient` from `useTurnkey()`
    * For @turnkey/sdk-browser: pass the client directly
-   * For @turnkey/http: pass the TurnkeyClient directly
    */
   client: TurnkeySignerClient
-
-  /**
-   * Turnkey organization ID
-   */
-  organizationId: string
 
   /**
    * Compressed secp256k1 public key (66 hex chars, starts with 02 or 03)
    * This is used for both signing and address derivation
    */
   publicKey: string
+
+  /**
+   * Turnkey organization ID
+   *
+   * Required for server-side signing with @turnkey/sdk-server.
+   * Omit when using the browser client (httpClient from useTurnkey()) —
+   * the browser session already scopes operations to the user's sub-organization.
+   */
+  organizationId?: string
 
   /**
    * Default network for transactions
@@ -61,6 +66,9 @@ export interface TurnkeySignerConfig {
 
 /**
  * Parameters for signing an STX token transfer
+ *
+ * Note: organizationId is not needed here — it is set once on TurnkeySigner
+ * construction and used for all signing operations automatically.
  */
 export interface STXTransferParams {
   /**

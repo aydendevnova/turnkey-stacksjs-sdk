@@ -6,7 +6,24 @@
  * This package provides a class-based signer following the patterns established
  * by @turnkey/solana, @turnkey/ethers, and @turnkey/cosmjs.
  *
- * @example
+ * Supports both server-side and client-side (browser) signing:
+ *
+ * @example Client-side signing (recommended — via react-wallet-kit)
+ * ```typescript
+ * import { TurnkeySigner, broadcastTransaction } from "@turnkey/stacks"
+ * import { useTurnkey } from "@turnkey/react-wallet-kit"
+ *
+ * // Inside a React component:
+ * const { httpClient } = useTurnkey()
+ * const signer = new TurnkeySigner({
+ *   client: httpClient,      // browser session handles org scoping
+ *   publicKey: stxPubKey,    // from wallets[0].accounts[0].publicKey
+ * })
+ * const { transaction } = await signer.signSTXTransfer({ ... })
+ * const txid = await broadcastTransaction(transaction)
+ * ```
+ *
+ * @example Server-side signing (via sdk-server)
  * ```typescript
  * import { TurnkeySigner, broadcastTransaction } from "@turnkey/stacks"
  * import { Turnkey } from "@turnkey/sdk-server"
@@ -14,15 +31,10 @@
  * const turnkey = new Turnkey({ ... })
  * const signer = new TurnkeySigner({
  *   client: turnkey.apiClient(),
- *   organizationId: "org-id",
+ *   organizationId: "org-id",   // required server-side
  *   publicKey: "025afa...",
  * })
- *
- * const address = signer.getAddress()
- * const { transaction } = await signer.signSTXTransfer({
- *   recipient: "ST2J6ZY...",
- *   amount: 1_000_000n,
- * })
+ * const { transaction } = await signer.signSTXTransfer({ ... })
  * const txid = await broadcastTransaction(transaction)
  * ```
  *
@@ -70,7 +82,8 @@ const API_ENDPOINTS: Record<StacksNetworkType, string> = {
 }
 
 /**
- * Validates that a public key is in compressed secp256k1 format
+ * Validates that a public key is in compressed secp256k1 format.
+ * Normalizes to lowercase hex (Turnkey's signWith is case-sensitive).
  * @internal
  */
 function validateCompressedPublicKey(pubKeyHex: string): string {
@@ -78,7 +91,7 @@ function validateCompressedPublicKey(pubKeyHex: string): string {
     throw new Error("Public key must be a string")
   }
 
-  const cleaned = pubKeyHex.startsWith("0x") ? pubKeyHex.slice(2) : pubKeyHex
+  const cleaned = (pubKeyHex.startsWith("0x") ? pubKeyHex.slice(2) : pubKeyHex).toLowerCase()
 
   if (cleaned.length !== 66) {
     throw new Error(
@@ -111,42 +124,39 @@ function normalizeRecoveryByte(v: string): string {
 /**
  * TurnkeySigner - Turnkey signer for Stacks transactions
  *
- * Follows the patterns established by @turnkey/solana, @turnkey/ethers, and @turnkey/cosmjs.
+ * Works with both browser clients (httpClient from useTurnkey) and
+ * server clients (apiClient from @turnkey/sdk-server).
  *
- * @example
+ * @example Browser (client-side) signing — no organizationId needed
+ * ```typescript
+ * import { TurnkeySigner } from "@turnkey/stacks"
+ * import { useTurnkey } from "@turnkey/react-wallet-kit"
+ *
+ * const { httpClient } = useTurnkey()
+ * const signer = new TurnkeySigner({
+ *   client: httpClient,
+ *   publicKey: wallets[0].accounts[0].publicKey,
+ * })
+ * ```
+ *
+ * @example Server-side signing — organizationId required
  * ```typescript
  * import { TurnkeySigner } from "@turnkey/stacks"
  * import { Turnkey } from "@turnkey/sdk-server"
  *
- * const turnkey = new Turnkey({
- *   apiBaseUrl: "https://api.turnkey.com",
- *   apiPrivateKey: process.env.TURNKEY_API_PRIVATE_KEY,
- *   apiPublicKey: process.env.TURNKEY_API_PUBLIC_KEY,
- *   defaultOrganizationId: process.env.TURNKEY_ORGANIZATION_ID,
- * })
- *
+ * const turnkey = new Turnkey({ ... })
  * const signer = new TurnkeySigner({
  *   client: turnkey.apiClient(),
  *   organizationId: process.env.TURNKEY_ORGANIZATION_ID,
- *   publicKey: "025afa6566651f6c49d84a482a1af918b25ba7caac0b06d9ab8d79a45b72715aeb",
- *   network: "testnet",
- * })
- *
- * // Get address
- * const address = signer.getAddress()
- *
- * // Sign a transfer
- * const { transaction } = await signer.signSTXTransfer({
- *   recipient: "ST2J6ZY7R94P80Z4CGFRHZ3Q16MF0NKHN3FK4R0N",
- *   amount: 1_000_000n, // 1 STX
+ *   publicKey: "025afa...",
  * })
  * ```
  */
 export class TurnkeySigner {
   /**
-   * Turnkey organization ID
+   * Turnkey organization ID (undefined when using browser client)
    */
-  public readonly organizationId: string
+  public readonly organizationId: string | undefined
 
   /**
    * Default network for this signer
@@ -304,14 +314,45 @@ export class TurnkeySigner {
    * @internal
    */
   private async signHash(hash: string): Promise<{ v: string; r: string; s: string }> {
-    const { v, r, s } = await this.client.signRawPayload({
-      signWith: this.compressedPublicKey,
-      payload: `0x${hash}`,
-      encoding: "PAYLOAD_ENCODING_HEXADECIMAL",
-      hashFunction: "HASH_FUNCTION_NO_OP",
-    })
+    try {
+      // Build the signing request. organizationId is only included when
+      // explicitly provided (server-side SDK). Browser clients (httpClient
+      // from useTurnkey) already scope to the user's sub-org via session —
+      // passing an explicit organizationId would override that and cause
+      // "Could not find any resource to sign with" errors.
+      const request: Parameters<TurnkeySignerClient["signRawPayload"]>[0] = {
+        signWith: this.compressedPublicKey,
+        payload: `0x${hash}`,
+        encoding: "PAYLOAD_ENCODING_HEXADECIMAL",
+        hashFunction: "HASH_FUNCTION_NO_OP",
+      }
 
-    return { v, r, s }
+      if (this.organizationId) {
+        request.organizationId = this.organizationId
+      }
+
+      const { v, r, s } = await this.client.signRawPayload(request)
+
+      return { v, r, s }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+
+      // Provide actionable context for the most common failure mode
+      if (message.includes("Could not find any resource to sign with")) {
+        throw new Error(
+          `Turnkey could not find a signing key.\n` +
+          `  signWith (publicKey): ${this.compressedPublicKey}\n` +
+          `  organizationId:      ${this.organizationId ?? "(not set — using client session)"}\n\n` +
+          `Possible causes:\n` +
+          `  1. If using server SDK: the organizationId may not match the org that owns the key.\n` +
+          `  2. If using browser client: ensure the user is authenticated and has a wallet.\n` +
+          `  3. The publicKey casing or format does not match what Turnkey has stored.\n\n` +
+          `Original error: ${message}`
+        )
+      }
+
+      throw error
+    }
   }
 }
 
