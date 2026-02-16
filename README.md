@@ -41,7 +41,7 @@ console.log(`Address: ${address}`)
 
 // Sign and broadcast transfer
 const { transaction } = await signer.signSTXTransfer({
-  recipient: "ST2J6ZY7R94P80Z4CGFRHZ3Q16MF0NKHN3FK4R0N",
+  recipient: "ST20J4GKB8W7KKA8B0KZ3J7G330DZ1WEWYXJKD4PV",
   amount: 1_000_000n, // 1 STX
 })
 
@@ -93,7 +93,7 @@ Signs an STX token transfer.
 
 ```typescript
 const { transaction, senderAddress, nonce, fee } = await signer.signSTXTransfer({
-  recipient: "ST2J6ZY...",
+  recipient: "ST20J4G...",
   amount: 1_000_000n,    // Required: amount in microSTX
   memo: "Payment",       // Optional: memo string
   nonce: 5n,             // Optional: fetched if not provided
@@ -133,7 +133,7 @@ import { signAndBroadcastSTXTransfer } from "@turnkey/stacks"
 
 const { txid, senderAddress, recipient, amount } = await signAndBroadcastSTXTransfer(
   signer,
-  { recipient: "ST2J6ZY...", amount: 1_000_000n }
+  { recipient: "ST20J4G...", amount: 1_000_000n }
 )
 ```
 

@@ -211,7 +211,7 @@ export class TurnkeySigner {
    * @example
    * ```typescript
    * const { transaction, senderAddress, nonce, fee } = await signer.signSTXTransfer({
-   *   recipient: "ST2J6ZY7R94P80Z4CGFRHZ3Q16MF0NKHN3FK4R0N",
+   *   recipient: "ST20J4GKB8W7KKA8B0KZ3J7G330DZ1WEWYXJKD4PV",
    *   amount: 1_000_000n, // 1 STX
    *   memo: "Payment for services",
    * })
@@ -375,7 +375,7 @@ export class TurnkeySigner {
  *   "025afa6566651f6c49d84a482a1af918b25ba7caac0b06d9ab8d79a45b72715aeb",
  *   "testnet"
  * )
- * // Returns: "ST2J6ZY..."
+ * // Returns: "ST20J4G..."
  * ```
  */
 export function getAddressFromPublicKey(
@@ -438,7 +438,7 @@ export async function broadcastTransaction(
  *
  * const signer = new TurnkeySigner({ ... })
  * const result = await signAndBroadcastSTXTransfer(signer, {
- *   recipient: "ST2J6ZY...",
+ *   recipient: "ST20J4G...",
  *   amount: 1_000_000n,
  * })
  * console.log(`TX ID: ${result.txid}`)
