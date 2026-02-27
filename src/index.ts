@@ -72,6 +72,11 @@ export type {
   StacksNetworkType,
 }
 
+// Users can check which version they are using. Could be used later for http calls.
+export { VERSION } from "./__generated__/version"
+
+const FETCH_TIMEOUT_MS = 10_000 // 10 seconds
+
 // Default fee for STX transfers (conservative)
 const DEFAULT_FEE = 180n
 
@@ -295,14 +300,34 @@ export class TurnkeySigner {
   private async fetchNonce(address: string, network: StacksNetworkType): Promise<bigint> {
     const baseUrl = API_ENDPOINTS[network]
     const url = `${baseUrl}/extended/v1/address/${address}/nonces`
-    const res = await fetch(url)
-
-    if (!res.ok) {
-      throw new Error(`Failed to fetch nonce: ${res.status} ${res.statusText}`)
+  
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
+  
+    try {
+      const res = await fetch(url, { signal: controller.signal })
+  
+      if (!res.ok) {
+        let errorDetail = ""
+        try {
+          const body = await res.text()
+          if (body) errorDetail = `: ${body}`
+        } catch {
+          // ignore parse errors
+        }
+        throw new Error(`Failed to fetch nonce: ${res.status} ${res.statusText}${errorDetail}`)
+      }
+  
+      const data = (await res.json()) as { possible_next_nonce?: number }
+      return BigInt(data.possible_next_nonce ?? 0)
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        throw new Error(`Nonce fetch timed out after ${FETCH_TIMEOUT_MS}ms`)
+      }
+      throw error
+    } finally {
+      clearTimeout(timeoutId)
     }
-
-    const data = (await res.json()) as { possible_next_nonce?: number }
-    return BigInt(data.possible_next_nonce ?? 0)
   }
 
   /**
@@ -331,8 +356,13 @@ export class TurnkeySigner {
         request.organizationId = this.organizationId
       }
 
-      const { v, r, s } = await this.client.signRawPayload(request)
+      const result = await this.client.signRawPayload(request)
 
+      if (!result || typeof result.v !== "string" || typeof result.r !== "string" || typeof result.s !== "string") {
+        throw new Error("Turnkey signing returned incomplete result: ${JSON.stringify(result)}")
+      }
+
+      const { v, r, s } = result
       return { v, r, s }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)

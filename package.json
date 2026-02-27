@@ -55,9 +55,6 @@
   "peerDependencies": {
     "@stacks/transactions": "^7.0.0"
   },
-  "dependencies": {
-    "@turnkey/http": "^2.20.0"
-  },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.0",
     "@rollup/plugin-node-resolve": "^16.0.0",
