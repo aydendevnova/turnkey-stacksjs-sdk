@@ -64,7 +64,7 @@ new TurnkeySigner(config: TurnkeySignerConfig)
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `config.client` | `TurnkeySignerClient` | Turnkey client (use `turnkey.apiClient()` for SDK server) |
-| `config.organizationId` | `string` | Turnkey organization ID |
+| `config.organizationId` | `string?` | Turnkey organization ID (required for server, omit for browser) |
 | `config.publicKey` | `string` | Compressed secp256k1 public key (66 hex chars) |
 | `config.network` | `'testnet' \| 'mainnet'` | Default network (optional, defaults to `'testnet'`) |
 
@@ -144,8 +144,8 @@ const { txid, senderAddress, recipient, amount } = await signAndBroadcastSTXTran
 ```typescript
 interface TurnkeySignerConfig {
   client: TurnkeySignerClient
-  organizationId: string
   publicKey: string
+  organizationId?: string  // required for server, omit for browser
   network?: "testnet" | "mainnet"
 }
 ```
